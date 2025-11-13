@@ -18,13 +18,13 @@ export const run = async () => {
     );
   }
 
-  const client = new github.GitHub(token);
+  const client = github.getOctokit(token);
 
   // *Optional*. Post an issue comment just before closing a pull request.
   const body = core.getInput("comment") || "";
   if (body.length > 0) {
     core.info("Creating a comment");
-    await client.issues.createComment({
+    await client.rest.issues.createComment({
       ...context.repo,
       issue_number: context.issue.number,
       body,
@@ -32,7 +32,7 @@ export const run = async () => {
   }
 
   core.info("Updating the state of a pull request to closed");
-  await client.pulls.update({
+  await client.rest.pulls.update({
     ...context.repo,
     pull_number: context.issue.number,
     state: "closed",

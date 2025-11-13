@@ -21,8 +21,8 @@
   },
   "homepage": "https://github.com/superbrothers/close-pull-request#readme",
   "dependencies": {
-    "@actions/core": "^1.9.1",
-    "@actions/github": "^2.1.1"
+    "@actions/core": "^1.11.1",
+    "@actions/github": "^6.0.1"
   },
   "devDependencies": {
     "@babel/cli": "^7.17.0",
