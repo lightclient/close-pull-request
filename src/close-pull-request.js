@@ -65,5 +65,5 @@ export const run = async () => {
     state: "closed",
   });
 
-  core.info(`Closed a pull request ${context.issue.number}`);
+  core.info(`Closed pull request ${context.issue.number}`);
 };
