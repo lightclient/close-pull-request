@@ -13,13 +13,28 @@ import * as core from "@actions/core";
 import { run } from "../src/close-pull-request";
 import * as errors from "../src/errors";
 
+
+jest.mock("fs", () => ({
+  ...jest.requireActual("fs"),
+  readFileSync: jest.fn(),
+  existsSync: jest.fn()
+}));
+const fs = require("fs");
+
 describe("Close Pull Request", () => {
   let update;
   let createComment;
   let inputs;
 
   beforeEach(() => {
-    inputs = { github_token: "token" };
+    fs.readFileSync.mockImplementation((path, encoding) => {
+      return "alice\nbob\ncharlie";
+    });
+    fs.existsSync.mockImplementation((path) => {
+      return true;
+    });
+
+    inputs = { github_token: "token", "allowlist": "" };
     ((core) => {
       core.getInput = jest.fn().mockImplementation((name) => {
         return inputs[name];
@@ -33,7 +48,7 @@ describe("Close Pull Request", () => {
       issue: { owner: "owner", repo: "repo", number: 1 },
       payload: {
         pull_request: {
-          user: { login: "alice" }
+          user: { login: "fred" }
         }
       }
     };
@@ -123,4 +138,38 @@ describe("Close Pull Request", () => {
       });
     });
   });
+
+  describe("when 'allowlist' input is passed and unauthorized user opens PR", () => {
+    beforeEach(() => {
+      inputs["allowlist"] = "ALLOW";
+    });
+
+    it("should close PR from unauthorized user", async () => {
+      await run();
+
+      expect(update).toHaveBeenCalledWith({
+        ...context.repo,
+        pull_number: context.issue.number,
+        state: "closed",
+      });
+    })
+  });
+
+  describe("when 'allowlist' input is passed and authorized user opens PR", () => {
+    beforeEach(() => {
+      inputs["allowlist"] = "ALLOW";
+      mockContext["payload"]["pull_request"]["user"]["login"] = "alice";
+    });
+
+    it("should allow PR from authorized user", async () => {
+      await run();
+
+      expect(update).not.toHaveBeenCalledWith({
+        ...context.repo,
+        pull_number: context.issue.number,
+        state: "closed",
+      });
+    })
+  });
+
 });

@@ -1,6 +1,7 @@
 import * as core from "@actions/core";
 import * as github from "@actions/github";
 import * as errors from "./errors";
+import * as fs from "fs";
 
 export const run = async () => {
   const context = github.context;
@@ -19,6 +20,32 @@ export const run = async () => {
   }
 
   const client = github.getOctokit(token);
+
+  const author = context.payload.pull_request.user.login;
+  core.info(`Pull request opened by: ${author}`);
+
+  // Read allowed users file.
+  const path = core.getInput("allowlist");
+
+  if (path.length > 0) {
+    if (!fs.existsSync(path)) {
+      core.setFailed(`Allow list not found: ${path}`);
+      return;
+    }
+
+    const allowed = fs
+      .readFileSync(path, "utf8")
+      .split("\n")
+      .map(u => u.trim())
+      .filter(Boolean);
+
+    if (allowed.includes(author)) {
+      core.info(`'@${author}' is authorized to open PRs.`);
+      return;
+    }
+  }
+
+  core.setFailed(`'@${author}' is not on the collaborator allow list (${path}).`);
 
   // *Optional*. Post an issue comment just before closing a pull request.
   const body = core.getInput("comment") || "";
